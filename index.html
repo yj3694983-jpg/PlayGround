@@ -17,9 +17,13 @@
  <div class="bottom"><div class="help"><b>WASD</b> move / drive &nbsp; <b>SPACE</b> jump / brake<br><b>MOUSE</b> look &nbsp; <b>CLICK</b> fire &nbsp; <b>E</b> interact / steal<br><b>1 / 2 / 3</b> weapon &nbsp; <b>SHIFT</b> sprint</div><div class="meters"><div class="meter"><div class="meterlabel"><span>VITALS</span><span id="healthnum">100%</span></div><div class="track"><div class="fill health" id="healthbar"></div></div></div><div class="meter"><div class="meterlabel"><span>STAMINA</span><span id="staminanum">100%</span></div><div class="track"><div class="fill" id="staminabar"></div></div></div></div></div>
  <div class="mobile"><div class="stick left" id="leftstick"><div class="nub" id="leftnub"></div></div><div class="stick right" id="rightstick"><div class="nub" id="rightnub"></div></div><button class="mobilebtn" id="interactbtn">E</button><button class="mobilebtn alt" id="jumpbtn">↑</button><button class="mobilebtn fire" id="firebtn">FIRE</button></div>
 </div>
-<div class="intro" id="intro"><div class="introbox"><div class="kicker">WELCOME TO THE CONCRETE COAST</div><h1>NEON<br><em>DISTRICT</em></h1><p>A living slice of the city. Hit the streets, find a ride, gear up, and decide who you want to be. The blocks have their own rules.</p><button class="start" id="startbtn">ENTER THE DISTRICT ↗</button><span class="subtle">Best with keyboard + mouse · No downloads</span></div></div>
+<div class="intro" id="intro"><div class="introbox"><div class="kicker">WELCOME TO THE CONCRETE COAST</div><h1>NEON<br><em>DISTRICT</em></h1><p>A living slice of the city. Hit the streets, find a ride, gear up, and decide who you want to be. The blocks have their own rules.</p><button class="start" id="startbtn">ENTER THE DISTRICT ↗</button><span class="subtle">Best with keyboard + mouse · No downloads</span><span class="subtle" style="margin-top:8px">Player model: <a href="https://sketchfab.com/3d-models/none-24ad029f3a094a679bc0b0b109ee40e3" target="_blank" rel="noopener">Male Character In Caual Clothing</a> by gamedevme · CC Attribution</span></div></div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ab8ba);scene.fog=new THREE.Fog(0x9ab8ba,70,250);
 const camera=new THREE.PerspectiveCamera(64,innerWidth/innerHeight,.1,450);
@@ -69,8 +73,9 @@ for(let i=0;i<30;i++){const x=(Math.random()-.5)*230,z=(Math.random()-.5)*230;if
 for(let i=0;i<35;i++){let x=(Math.random()-.5)*205,z=(Math.random()-.5)*205;if(Math.abs(x%24)<7||Math.abs(z%24)<7){i--;continue}makePerson(x,z)}
 // Turf corners: rival crews actively pursue and exchange fire
 for(let i=0;i<6;i++){makePerson(25+Math.random()*11,22+Math.random()*10,0);makePerson(37+Math.random()*10,29+Math.random()*8,1)}
-// Player character geometry
-const playerBody=box(0,1.02,0,.55,1.1,.38,mat(0x2a5751),player.g);const playerHead=new THREE.Mesh(new THREE.SphereGeometry(.26,10,8),mats.skin);playerHead.position.y=1.78;playerHead.castShadow=true;player.g.add(playerHead);box(0,1.48,-.01,.57,.18,.4,mat(0x292a27),player.g);for(let side of [-1,1]){box(side*.16,.37,0,.2,.72,.24,mats.dark,player.g);box(side*.38,1.1,0,.16,.68,.2,mat(0x2a5751),player.g)}
+// Textured Sketchfab player model, with the original low-poly figure as a load-failure fallback.
+const playerFallback=new THREE.Group();player.g.add(playerFallback);const playerBody=box(0,1.02,0,.55,1.1,.38,mat(0x2a5751),playerFallback);const playerHead=new THREE.Mesh(new THREE.SphereGeometry(.26,10,8),mats.skin);playerHead.position.y=1.78;playerHead.castShadow=true;playerFallback.add(playerHead);box(0,1.48,-.01,.57,.18,.4,mat(0x292a27),playerFallback);for(let side of [-1,1]){box(side*.16,.37,0,.2,.72,.24,mats.dark,playerFallback);box(side*.38,1.1,0,.16,.68,.2,mat(0x2a5751),playerFallback)}
+let playerModel=null;new GLTFLoader().load('./public/models/neon-district-player.glb',gltf=>{playerModel=gltf.scene;playerModel.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(playerModel),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());playerModel.position.set(-center.x,-bounds.min.y,-center.z);playerModel.scale.setScalar(1.82/size.y);playerModel.rotation.y=Math.PI;playerModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});player.g.add(playerModel);playerFallback.visible=false},undefined,error=>console.warn('Player model failed to load; using fallback character.',error));
 // Ambient street light and skyline haze
 const skyGlow=new THREE.PointLight(0xffa45a,20,90,2);skyGlow.position.set(-30,22,-70);scene.add(skyGlow);
 const keys={};let mouseDown=false,started=false,toastTimer=0,shopNear=null,nearCar=null,gameTime=0,cityClock=18.7,staminaLock=0;
